@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Clonner</string>
+
+    <string name="tab_clones">Clones</string>
+    <string name="tab_shield">Shield</string>
+    <string name="tab_settings">Settings</string>
+
+    <string name="clones_title">Your clones</string>
+    <string name="clones_empty_title">No clones yet</string>
+    <string name="clones_empty_body">Create a clone of an installed app to give it its own name, its own icon and its own ad-blocking rules — then pin it to your home screen.</string>
+    <string name="new_clone">New clone</string>
+    <string name="pick_app_title">Choose an app</string>
+    <string name="search_apps">Search apps</string>
+
+    <string name="add_to_home">Add to Home Screen</string>
+    <string name="launch">Launch</string>
+    <string name="rename">Name</string>
+    <string name="delete_clone">Delete clone</string>
+    <string name="block_ads_here">Block ads in this clone</string>
+
+    <string name="shield_title">Ad Shield</string>
+    <string name="shield_on">Protection on</string>
+    <string name="shield_off">Protection off</string>
+    <string name="blocked_today">Blocked</string>
+    <string name="allowed_today">Allowed</string>
+    <string name="blocklist_sources">Blocklists</string>
+    <string name="update_blocklists">Update now</string>
+    <string name="recent_blocks">Recently blocked</string>
+
+    <string name="vpn_channel_name">Ad Shield</string>
+    <string name="vpn_notification_title">Ad Shield is running</string>
+    <string name="vpn_notification_body">Filtering ad and tracker domains</string>
+    <string name="stop">Stop</string>
+
+    <string name="notice_title">How Clonner works</string>
+    <string name="notice_body">Clonner never modifies, repackages or redistributes other apps. Ads are blocked at the network level: a local, on-device VPN drops DNS lookups for known ad and tracker domains. No traffic leaves your device through any Clonner server, and nothing is uploaded anywhere.</string>
+</resources>

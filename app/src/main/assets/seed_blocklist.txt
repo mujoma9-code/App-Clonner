@@ -1,0 +1,88 @@
+# Clonner seed blocklist
+# A small, high-confidence set of mobile ad and tracking endpoints so the shield is
+# useful before the first blocklist download. Full lists are fetched from the sources
+# on the Shield screen. Format: one domain per line, '#' starts a comment.
+
+# Google / AdMob
+doubleclick.net
+googleadservices.com
+googlesyndication.com
+pagead2.googlesyndication.com
+adservice.google.com
+admob.com
+app-measurement.com
+googleads.g.doubleclick.net
+
+# Meta
+graph.facebook.com.ads
+an.facebook.com
+ads.facebook.com
+
+# Mobile ad networks
+applovin.com
+ms.applovin.com
+unityads.unity3d.com
+auction.unityads.unity3d.com
+adcolony.com
+ads.adcolony.com
+vungle.com
+api.vungle.com
+chartboost.com
+live.chartboost.com
+ironsrc.com
+init.supersonicads.com
+inner-active.mobi
+mopub.com
+ads.mopub.com
+tapjoy.com
+ads.tapjoy.com
+startappservice.com
+startappexchange.com
+inmobi.com
+api.inmobi.com
+smaato.net
+adtapsy.com
+appnext.com
+mobfox.com
+pubmatic.com
+rubiconproject.com
+openx.net
+criteo.com
+criteo.net
+taboola.com
+outbrain.com
+
+# Analytics and attribution
+flurry.com
+data.flurry.com
+crashlytics.com
+adjust.com
+app.adjust.com
+appsflyer.com
+t.appsflyer.com
+branch.io
+api.branch.io
+kochava.com
+control.kochava.com
+mixpanel.com
+api.mixpanel.com
+amplitude.com
+api.amplitude.com
+segment.io
+api.segment.io
+scorecardresearch.com
+b.scorecardresearch.com
+bugsnag.com
+sentry.io
+
+# Misc trackers
+adsrvr.org
+casalemedia.com
+bidswitch.net
+adnxs.com
+sharethrough.com
+33across.com
+teads.tv
+smartadserver.com
+zemanta.com
+yieldmo.com

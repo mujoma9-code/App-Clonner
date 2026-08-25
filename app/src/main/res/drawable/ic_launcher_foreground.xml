@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+
+    <!-- back card of the "clone" pair -->
+    <path
+        android:pathData="M36,32h30a7,7 0 0 1 7,7v30a7,7 0 0 1 -7,7h-30a7,7 0 0 1 -7,-7v-30a7,7 0 0 1 7,-7z"
+        android:fillColor="#FFFFFF"
+        android:fillAlpha="0.45" />
+
+    <!-- front card -->
+    <path
+        android:pathData="M45,41h30a7,7 0 0 1 7,7v30a7,7 0 0 1 -7,7h-30a7,7 0 0 1 -7,-7v-30a7,7 0 0 1 7,-7z"
+        android:fillColor="#FF1B1340" />
+
+    <!-- shield inside the front card -->
+    <path
+        android:pathData="M60,49l13,5v10c0,7.6 -5.2,14.3 -13,16.4C52.2,78.3 47,71.6 47,64v-10z"
+        android:fillColor="#FF12F0E1" />
+
+    <!-- check mark -->
+    <path
+        android:pathData="M54,63.5l4.5,4.5l9,-9"
+        android:strokeColor="#FF1B1340"
+        android:strokeWidth="4"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round" />
+</vector>
