@@ -15,13 +15,16 @@ on:
 jobs:
   build:
     name: Build unsigned IPA
-    runs-on: macos-14
+    runs-on: macos-15
 
     steps:
       - uses: actions/checkout@v4
 
       - name: Show Xcode version
-        run: xcodebuild -version
+        run: |
+          ls /Applications | grep -i "^Xcode" || true
+          xcodebuild -version
+          swift --version
 
       - name: Install XcodeGen
         run: brew install xcodegen

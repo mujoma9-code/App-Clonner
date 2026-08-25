@@ -4,6 +4,10 @@ options:
   deploymentTarget:
     iOS: "16.0"
   createIntermediateGroups: true
+  # Current XcodeGen defaults to project format 77, which only Xcode 16+ can open.
+  # Pinning to 56 keeps the generated project readable by Xcode 14 through 16, so the
+  # build does not break when the runner image changes its bundled Xcode.
+  objectVersion: 56
 
 settings:
   base:
