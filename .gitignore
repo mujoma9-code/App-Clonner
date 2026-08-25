@@ -13,3 +13,7 @@ captures/
 !debug.keystore
 release/
 .kotlin/
+
+# Signing material - never commit
+keystore.properties
+*.jks

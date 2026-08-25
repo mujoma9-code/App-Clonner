@@ -1,0 +1,184 @@
+name: Release
+
+# Builds both apps and publishes them as a GitHub Release.
+#
+# Trigger by pushing a tag:      git tag v1.0.0 && git push origin v1.0.0
+# Or run it by hand from the Actions tab, supplying a tag name.
+
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Tag to publish (e.g. v1.0.0)"
+        required: true
+        default: "v1.0.0"
+
+permissions:
+  contents: write
+
+jobs:
+  android:
+    name: Build Android APK
+    runs-on: ubuntu-latest
+    # Lifted to job level because the `secrets` context is not available in a step `if`.
+    env:
+      KEYSTORE_B64: ${{ secrets.CLONNER_KEYSTORE_BASE64 }}
+      STORE_PASSWORD: ${{ secrets.CLONNER_KEYSTORE_PASSWORD }}
+      KEY_ALIAS: ${{ secrets.CLONNER_KEY_ALIAS }}
+      KEY_PASSWORD: ${{ secrets.CLONNER_KEY_PASSWORD }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v4
+
+      # Signs with a real key when CLONNER_KEYSTORE_BASE64 is configured as a repository
+      # secret; otherwise the build falls back to the debug key, which still installs but
+      # cannot update a differently-signed build.
+      - name: Restore signing key
+        run: |
+          if [ -z "$KEYSTORE_B64" ]; then
+            echo "No release key configured — falling back to the debug key."
+            echo "The APK will install, but cannot update a differently-signed build."
+            exit 0
+          fi
+          echo "$KEYSTORE_B64" | base64 -d > clonner-release.jks
+          cat > keystore.properties <<EOF
+          storeFile=../clonner-release.jks
+          storePassword=$STORE_PASSWORD
+          keyAlias=$KEY_ALIAS
+          keyPassword=$KEY_PASSWORD
+          EOF
+          echo "Signing with the configured release key."
+
+      - name: Run unit tests
+        run: ./gradlew :app:testDebugUnitTest --console=plain
+
+      - name: Build release APK
+        run: ./gradlew :app:assembleRelease --console=plain
+
+      - name: Report signer
+        run: |
+          APK=$(find app/build/outputs/apk/release -name "*.apk" ! -name "*unsigned*" | head -1)
+          echo "APK: $APK"
+          BUILD_TOOLS=$(ls -d "$ANDROID_HOME"/build-tools/* | sort -V | tail -1)
+          "$BUILD_TOOLS/apksigner" verify --print-certs "$APK" || true
+          cp "$APK" Clonner-android.apk
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: android-apk
+          path: Clonner-android.apk
+          if-no-files-found: error
+
+  ios:
+    name: Build iOS IPA
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install XcodeGen
+        run: brew install xcodegen
+
+      - name: Generate Xcode project
+        working-directory: ios
+        run: xcodegen generate --spec project.yml
+
+      - name: Build (unsigned)
+        working-directory: ios
+        run: |
+          set -o pipefail
+          xcodebuild \
+            -project Clonner.xcodeproj \
+            -scheme Clonner \
+            -configuration Release \
+            -sdk iphoneos \
+            -derivedDataPath build \
+            CODE_SIGN_IDENTITY="" \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGNING_ALLOWED=NO \
+            ONLY_ACTIVE_ARCH=NO \
+            build
+
+      - name: Package into an IPA
+        working-directory: ios
+        run: |
+          APP_PATH="build/Build/Products/Release-iphoneos/Clonner.app"
+          if [ ! -d "$APP_PATH" ]; then
+            echo "::error::Build produced no .app at $APP_PATH"
+            exit 1
+          fi
+          mkdir -p payload/Payload
+          cp -R "$APP_PATH" payload/Payload/
+          cd payload && zip -qry ../Clonner-ios-unsigned.ipa Payload
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ios-ipa
+          path: ios/Clonner-ios-unsigned.ipa
+          if-no-files-found: error
+
+  publish:
+    name: Publish release
+    needs: [android, ios]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+
+      - name: Stage release assets
+        run: |
+          mkdir -p release
+          cp artifacts/android-apk/Clonner-android.apk release/
+          cp artifacts/ios-ipa/Clonner-ios-unsigned.ipa release/
+          cp ios/Clonner-AdShield-AdGuard.mobileconfig release/
+          ls -la release/
+
+      - name: Publish
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ github.event.inputs.tag || github.ref_name }}
+        run: |
+          cat > notes.md <<'NOTES'
+          ## Downloads
+
+          | File | Platform | Notes |
+          |---|---|---|
+          | `Clonner-android.apk` | Android 8.0+ | Ready to install. Enable "install unknown apps" for your browser or file manager first. |
+          | `Clonner-ios-unsigned.ipa` | iOS 16+ | **Unsigned** — re-sign with AltStore, Sideloadly or ESign before installing. |
+          | `Clonner-AdShield-AdGuard.mobileconfig` | iOS 14+ | Ad blocker on its own. No app, no signing — AirDrop it to the phone and install from Settings. |
+
+          ## What's in it
+
+          **Android**
+          - **Clones** — your own name, colour and pinned home-screen icon for an installed app. Opens the real app; shares its login.
+          - **Real** — work-profile clones. A genuinely separate instance with its own storage and its own login, so two accounts can be signed in at once. Needs Android 9+ and a device that supports managed profiles, and Android permits only one work profile per device.
+          - **Ad Shield** — an on-device DNS filter. Only the DNS address is routed into the tunnel; everything else takes its normal path. No remote server, nothing uploaded.
+
+          **iOS** — a launcher, not a cloner. iOS has no API to list installed apps, duplicate one, or place a home-screen icon, and sideloading does not change that: signing installs an app, it does not grant entitlements. So the app gives your apps custom names and colours, opens them by URL scheme, and routes home-screen icons through the Shortcuts app. Ad blocking is the configuration profile.
+
+          ## Not tested on hardware
+
+          Both apps build clean and the unit tests pass, but neither has run on a real phone. The Android work-profile setup in particular goes through a multi-screen system flow that CI cannot exercise. Please report anything that breaks.
+
+          Clonner never modifies, repackages or redistributes another app.
+          NOTES
+
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            gh release upload "$TAG" release/* --clobber
+          else
+            gh release create "$TAG" release/* \
+              --title "Clonner $TAG" \
+              --notes-file notes.md
+          fi
+          echo "Published $TAG"
