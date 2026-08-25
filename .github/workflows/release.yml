@@ -174,11 +174,16 @@ jobs:
           Clonner never modifies, repackages or redistributes another app.
           NOTES
 
+          # --target pins the tag to the commit this run built, so a dispatch run works
+          # without the tag having to exist beforehand.
           if gh release view "$TAG" >/dev/null 2>&1; then
             gh release upload "$TAG" release/* --clobber
           else
             gh release create "$TAG" release/* \
+              --target "$GITHUB_SHA" \
               --title "Clonner $TAG" \
               --notes-file notes.md
           fi
           echo "Published $TAG"
+          gh release view "$TAG" --json tagName,assets \
+            --jq '"tag: \(.tagName)", (.assets[] | "asset: \(.name) (\(.size) bytes)")'
