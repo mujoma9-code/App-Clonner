@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>PayloadContent</key>
+	<array>
+		<dict>
+			<key>PayloadType</key>
+			<string>com.apple.dnsSettings.managed</string>
+			<key>PayloadVersion</key>
+			<integer>1</integer>
+			<key>PayloadIdentifier</key>
+			<string>dev.clonner.adshield.dns</string>
+			<key>PayloadUUID</key>
+			<string>B2842DA5-1DB9-47EA-8966-B54A580FE13E</string>
+			<key>PayloadDisplayName</key>
+			<string>Ad Shield DNS</string>
+			<key>PayloadDescription</key>
+			<string>Routes DNS through AdGuard's ad-blocking resolver over encrypted HTTPS.</string>
+			<key>DNSSettings</key>
+			<dict>
+				<key>DNSProtocol</key>
+				<string>HTTPS</string>
+				<key>ServerURL</key>
+				<string>https://dns.adguard-dns.com/dns-query</string>
+				<key>ServerAddresses</key>
+				<array>
+					<string>94.140.14.14</string>
+					<string>94.140.15.15</string>
+					<string>2a10:50c0::ad1:ff</string>
+					<string>2a10:50c0::ad2:ff</string>
+				</array>
+			</dict>
+			<key>ProhibitDisablement</key>
+			<false/>
+		</dict>
+	</array>
+
+	<key>PayloadType</key>
+	<string>Configuration</string>
+	<key>PayloadVersion</key>
+	<integer>1</integer>
+	<key>PayloadIdentifier</key>
+	<string>dev.clonner.adshield</string>
+	<key>PayloadUUID</key>
+	<string>AEFD2441-F25B-4487-A182-7DA278AA87EA</string>
+	<key>PayloadDisplayName</key>
+	<string>Clonner Ad Shield</string>
+	<key>PayloadDescription</key>
+	<string>Blocks ad and tracker domains across every app on this device by sending DNS lookups to AdGuard's filtering resolver over encrypted HTTPS. Remove it any time in Settings - General - VPN and Device Management.</string>
+	<key>PayloadOrganization</key>
+	<string>Clonner</string>
+	<key>PayloadRemovalDisallowed</key>
+	<false/>
+</dict>
+</plist>

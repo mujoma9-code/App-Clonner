@@ -1,0 +1,100 @@
+name: Clonner
+options:
+  bundleIdPrefix: dev.clonner
+  deploymentTarget:
+    iOS: "16.0"
+  createIntermediateGroups: true
+
+settings:
+  base:
+    MARKETING_VERSION: "1.0.0"
+    CURRENT_PROJECT_VERSION: "1"
+    SWIFT_VERSION: "5.9"
+    DEVELOPMENT_TEAM: ""
+    CODE_SIGN_STYLE: Manual
+    CODE_SIGN_IDENTITY: ""
+    CODE_SIGNING_REQUIRED: "NO"
+    CODE_SIGNING_ALLOWED: "NO"
+    ENABLE_BITCODE: "NO"
+
+targets:
+  Clonner:
+    type: application
+    platform: iOS
+    sources:
+      - path: Clonner
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: dev.clonner.app
+        PRODUCT_NAME: Clonner
+        INFOPLIST_KEY_UILaunchScreen_Generation: "YES"
+        INFOPLIST_KEY_UIApplicationSceneManifest_Generation: "YES"
+        INFOPLIST_KEY_UISupportedInterfaceOrientations: "UIInterfaceOrientationPortrait"
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+        TARGETED_DEVICE_FAMILY: "1,2"
+    info:
+      path: Clonner/Info.plist
+      properties:
+        CFBundleDisplayName: Clonner
+        CFBundleShortVersionString: "1.0.0"
+        CFBundleVersion: "1"
+        UILaunchScreen: {}
+        UIUserInterfaceStyle: Automatic
+        ITSAppUsesNonExemptEncryption: false
+        CFBundleURLTypes:
+          - CFBundleURLName: dev.clonner.app
+            CFBundleURLSchemes:
+              - clonner
+        # iOS caps this list at 50 entries. Anything not listed here reports as
+        # "not installed" from canOpenURL, so the catalogue is curated to match.
+        LSApplicationQueriesSchemes:
+          - instagram
+          - fb
+          - twitter
+          - snapchat
+          - tiktok
+          - whatsapp
+          - tg
+          - discord
+          - reddit
+          - pinterest
+          - linkedin
+          - threads
+          - youtube
+          - spotify
+          - music
+          - soundcloud
+          - nflx
+          - primevideo
+          - twitch
+          - deezer
+          - shazam
+          - vlc
+          - googlechrome
+          - firefox
+          - opera
+          - brave
+          - ddgQuickLink
+          - googlegmail
+          - ms-outlook
+          - protonmail
+          - slack
+          - msteams
+          - zoomus
+          - webex
+          - googledrive
+          - dropbox
+          - onedrive
+          - notion
+          - evernote
+          - todoist
+          - things
+          - bear
+          - comgooglemaps
+          - waze
+          - citymapper
+          - uber
+          - lyft
+          - abnb
+          - booking
+          - shopify

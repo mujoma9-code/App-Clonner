@@ -1,0 +1,72 @@
+name: Build iOS IPA
+
+# Builds an UNSIGNED .ipa on a macOS runner and uploads it as an artifact.
+# Download it from the run's "Artifacts" section, then re-sign it with your own
+# signer (AltStore, Sideloadly, ESign, ...) before installing.
+
+on:
+  push:
+    branches: ["**"]
+    paths:
+      - "ios/**"
+      - ".github/workflows/ios-build.yml"
+  workflow_dispatch:
+
+jobs:
+  build:
+    name: Build unsigned IPA
+    runs-on: macos-14
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Show Xcode version
+        run: xcodebuild -version
+
+      - name: Install XcodeGen
+        run: brew install xcodegen
+
+      - name: Generate Xcode project
+        working-directory: ios
+        run: xcodegen generate --spec project.yml
+
+      - name: Build (unsigned)
+        working-directory: ios
+        run: |
+          set -o pipefail
+          xcodebuild \
+            -project Clonner.xcodeproj \
+            -scheme Clonner \
+            -configuration Release \
+            -sdk iphoneos \
+            -derivedDataPath build \
+            CODE_SIGN_IDENTITY="" \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGNING_ALLOWED=NO \
+            ONLY_ACTIVE_ARCH=NO \
+            build
+
+      - name: Package into an IPA
+        working-directory: ios
+        run: |
+          APP_PATH="build/Build/Products/Release-iphoneos/Clonner.app"
+          if [ ! -d "$APP_PATH" ]; then
+            echo "::error::Build produced no .app at $APP_PATH"
+            find build/Build/Products -maxdepth 3 -name "*.app" || true
+            exit 1
+          fi
+          mkdir -p payload/Payload
+          cp -R "$APP_PATH" payload/Payload/
+          cd payload
+          zip -qry ../Clonner-unsigned.ipa Payload
+          cd ..
+          echo "Built $(du -h Clonner-unsigned.ipa | cut -f1) IPA"
+          unzip -l Clonner-unsigned.ipa | head -20
+
+      - name: Upload IPA
+        uses: actions/upload-artifact@v4
+        with:
+          name: Clonner-unsigned-ipa
+          path: ios/Clonner-unsigned.ipa
+          if-no-files-found: error
+          retention-days: 30
