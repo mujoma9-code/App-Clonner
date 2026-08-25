@@ -76,5 +76,23 @@
             android:name=".shortcut.PinResultReceiver"
             android:exported="false" />
 
+        <!--
+          Required before Android will let Clonner own a managed profile. This is what
+          makes real cloning possible: an app installed into that profile is a separate
+          instance with its own data and its own login.
+        -->
+        <receiver
+            android:name=".work.ClonnerDeviceAdminReceiver"
+            android:exported="true"
+            android:permission="android.permission.BIND_DEVICE_ADMIN">
+            <meta-data
+                android:name="android.app.device_admin"
+                android:resource="@xml/device_admin" />
+            <intent-filter>
+                <action android:name="android.app.action.DEVICE_ADMIN_ENABLED" />
+                <action android:name="android.app.action.PROFILE_PROVISIONING_COMPLETE" />
+            </intent-filter>
+        </receiver>
+
     </application>
 </manifest>

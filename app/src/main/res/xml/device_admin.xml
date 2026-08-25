@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Clonner asks for no invasive device-admin policies. The receiver exists only because
+  Android requires one before it will let an app own a managed profile; none of the
+  password, lock or wipe controls are declared here.
+-->
+<device-admin xmlns:android="http://schemas.android.com/apk/res/android">
+    <uses-policies />
+</device-admin>

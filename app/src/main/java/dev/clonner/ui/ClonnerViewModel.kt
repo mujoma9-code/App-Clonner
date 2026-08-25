@@ -14,6 +14,9 @@ import dev.clonner.shortcut.CloneShortcuts
 import dev.clonner.vpn.BlocklistEngine
 import dev.clonner.vpn.ClonnerVpnService
 import dev.clonner.vpn.ShieldState
+import dev.clonner.work.WorkProfileManager
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -55,6 +58,97 @@ class ClonnerViewModel(app: Application) : AndroidViewModel(app) {
     val messages: StateFlow<String?> = _messages.asStateFlow()
 
     val appRepository get() = application.apps
+
+    // MARK: work profile — real cloning
+
+    private val workProfile = WorkProfileManager(app)
+
+    private val _workState = MutableStateFlow<WorkProfileManager.State>(
+        WorkProfileManager.State.NotSetUp
+    )
+    val workState: StateFlow<WorkProfileManager.State> = _workState.asStateFlow()
+
+    private val _workClones = MutableStateFlow<List<InstalledApp>>(emptyList())
+    val workClones: StateFlow<List<InstalledApp>> = _workClones.asStateFlow()
+
+    private val _workBusy = MutableStateFlow(false)
+    val workBusy: StateFlow<Boolean> = _workBusy.asStateFlow()
+
+    /** Apps on the device that are not already cloned into the profile. */
+    val workCandidates: StateFlow<List<InstalledApp>> = combine(
+        installedApps,
+        _workClones,
+    ) { all, cloned ->
+        val existing = cloned.map { it.packageName }.toSet()
+        all.filterNot { it.isSystem || it.packageName in existing }
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
+
+    init {
+        refreshWorkProfile()
+    }
+
+    fun refreshWorkProfile() {
+        viewModelScope.launch {
+            val state = withContext(Dispatchers.IO) { workProfile.state() }
+            _workState.value = state
+            _workClones.value = when (state) {
+                is WorkProfileManager.State.Ready ->
+                    withContext(Dispatchers.IO) { workProfile.clonedApps(state.profile) }
+                WorkProfileManager.State.InsideWorkProfile ->
+                    withContext(Dispatchers.IO) { workProfile.clonedApps() }
+                else -> emptyList()
+            }
+            if (state == WorkProfileManager.State.InsideWorkProfile) loadInstalledApps()
+        }
+    }
+
+    /** The system provisioning intent, or null when this device cannot host a profile. */
+    fun workProvisioningIntent() = workProfile.provisioningIntent()
+
+    fun canProvisionWorkProfile() = workProfile.canProvision()
+
+    fun onProvisioningResult(accepted: Boolean) {
+        _workBusy.value = false
+        _messages.value = if (accepted) {
+            "Work profile created — open Clonner inside it to add clones"
+        } else {
+            "Setup cancelled"
+        }
+        refreshWorkProfile()
+    }
+
+    fun setWorkBusy(busy: Boolean) { _workBusy.value = busy }
+
+    fun openWorkProfileClonner() {
+        if (!workProfile.openWorkProfileClonner()) {
+            _messages.value = "Open Clonner from the Work tab in your launcher"
+        }
+    }
+
+    fun cloneIntoWorkProfile(app: InstalledApp) = viewModelScope.launch {
+        _workBusy.value = true
+        val ok = withContext(Dispatchers.IO) { workProfile.cloneIntoProfile(app.packageName) }
+        _workBusy.value = false
+        _messages.value = if (ok) {
+            "${app.label} cloned — look for the badged icon in your launcher"
+        } else {
+            "Could not clone ${app.label}"
+        }
+        refreshWorkProfile()
+    }
+
+    fun removeFromWorkProfile(app: InstalledApp) = viewModelScope.launch {
+        val ok = withContext(Dispatchers.IO) { workProfile.removeFromProfile(app.packageName) }
+        _messages.value = if (ok) "${app.label} removed from the work profile"
+        else "Could not remove ${app.label}"
+        refreshWorkProfile()
+    }
+
+    fun launchWorkClone(app: InstalledApp) {
+        if (!workProfile.launchCloned(app.packageName)) {
+            _messages.value = "Could not open ${app.label}"
+        }
+    }
 
     fun loadInstalledApps() {
         if (_loadingApps.value) return

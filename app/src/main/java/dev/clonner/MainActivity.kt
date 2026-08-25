@@ -18,6 +18,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.ContentCopy
 import androidx.compose.material.icons.rounded.Settings
 import androidx.compose.material.icons.rounded.Shield
+import androidx.compose.material.icons.rounded.WorkOutline
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -45,6 +46,7 @@ import dev.clonner.ui.screens.CloneDetailScreen
 import dev.clonner.ui.screens.ClonesScreen
 import dev.clonner.ui.screens.SettingsScreen
 import dev.clonner.ui.screens.ShieldScreen
+import dev.clonner.ui.screens.WorkProfileScreen
 import dev.clonner.ui.theme.ClonnerTheme
 import dev.clonner.vpn.ClonnerVpnService
 import dev.clonner.vpn.ShieldState
@@ -69,6 +71,16 @@ class MainActivity : ComponentActivity() {
 
     private var pendingShieldRequest: ((Boolean) -> Unit)? = null
 
+    /**
+     * Android runs work-profile provisioning as its own multi-screen flow, so the result
+     * comes back here rather than to the composable that started it.
+     */
+    private val workProvisioning = registerForActivityResult(
+        ActivityResultContracts.StartActivityForResult()
+    ) { result ->
+        provisioningSink?.invoke(result.resultCode == RESULT_OK)
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContent {
@@ -77,10 +89,23 @@ class MainActivity : ComponentActivity() {
                     onRequestShield = ::requestShield,
                     onStopShield = { ClonnerVpnService.stop(this) },
                     onLaunchApp = ::launchPackage,
+                    onProvisionWorkProfile = { workProvisioning.launch(it) },
                 )
             }
         }
         askForNotificationPermission()
+    }
+
+    override fun onResume() {
+        super.onResume()
+        // A profile can be created or removed outside the app, so re-check on return.
+        provisioningRefresh?.invoke()
+    }
+
+    companion object {
+        /** Set by the composable so activity results can reach the view model. */
+        var provisioningSink: ((Boolean) -> Unit)? = null
+        var provisioningRefresh: (() -> Unit)? = null
     }
 
     /** Asks for VPN consent if it has not been granted yet, then starts the service. */
@@ -107,7 +132,12 @@ class MainActivity : ComponentActivity() {
     }
 }
 
-private enum class Tab(val label: String) { Clones("Clones"), Shield("Shield"), Settings("Settings") }
+private enum class Tab(val label: String) {
+    Clones("Clones"),
+    Real("Real"),
+    Shield("Shield"),
+    Settings("Settings"),
+}
 
 private sealed interface Route {
     data object Tabs : Route
@@ -121,8 +151,13 @@ private fun ClonnerRoot(
     onRequestShield: ((Boolean) -> Unit) -> Unit,
     onStopShield: () -> Unit,
     onLaunchApp: (String) -> Unit,
+    onProvisionWorkProfile: (Intent) -> Unit,
 ) {
     val viewModel: ClonnerViewModel = viewModel(factory = ClonnerViewModel.Factory)
+    LaunchedEffect(Unit) {
+        MainActivity.provisioningSink = viewModel::onProvisioningResult
+        MainActivity.provisioningRefresh = viewModel::refreshWorkProfile
+    }
 
     val clones by viewModel.clones.collectAsStateWithLifecycle()
     val installedApps by viewModel.installedApps.collectAsStateWithLifecycle()
@@ -134,6 +169,10 @@ private fun ClonnerRoot(
     val userRules by viewModel.userRules.collectAsStateWithLifecycle()
     val updating by viewModel.updatingLists.collectAsStateWithLifecycle()
     val message by viewModel.messages.collectAsStateWithLifecycle()
+    val workState by viewModel.workState.collectAsStateWithLifecycle()
+    val workClones by viewModel.workClones.collectAsStateWithLifecycle()
+    val workCandidates by viewModel.workCandidates.collectAsStateWithLifecycle()
+    val workBusy by viewModel.workBusy.collectAsStateWithLifecycle()
 
     var tab by remember { mutableStateOf(Tab.Clones) }
     var route by remember { mutableStateOf<Route>(Route.Tabs) }
@@ -194,6 +233,7 @@ private fun ClonnerRoot(
                         Text(
                             text = when (tab) {
                                 Tab.Clones -> "Clonner"
+                                Tab.Real -> "Real clones"
                                 Tab.Shield -> "Ad Shield"
                                 Tab.Settings -> "Settings"
                             },
@@ -215,6 +255,7 @@ private fun ClonnerRoot(
                                 Icon(
                                     imageVector = when (entry) {
                                         Tab.Clones -> Icons.Rounded.ContentCopy
+                                        Tab.Real -> Icons.Rounded.WorkOutline
                                         Tab.Shield -> Icons.Rounded.Shield
                                         Tab.Settings -> Icons.Rounded.Settings
                                     },
@@ -244,6 +285,28 @@ private fun ClonnerRoot(
                             onOpenClone = { route = Route.Detail(it.id) },
                             onLaunchClone = openClone,
                             onNewClone = { route = Route.Picker },
+                        )
+
+                        Tab.Real -> WorkProfileScreen(
+                            state = workState,
+                            clonedApps = workClones,
+                            candidates = workCandidates,
+                            apps = viewModel.appRepository,
+                            busy = workBusy,
+                            contentPadding = padding,
+                            onCreateProfile = {
+                                val intent = viewModel.workProvisioningIntent()
+                                if (intent == null || !viewModel.canProvisionWorkProfile()) {
+                                    viewModel.onProvisioningResult(accepted = false)
+                                } else {
+                                    viewModel.setWorkBusy(true)
+                                    onProvisionWorkProfile(intent)
+                                }
+                            },
+                            onOpenWorkClonner = viewModel::openWorkProfileClonner,
+                            onCloneApp = viewModel::cloneIntoWorkProfile,
+                            onLaunchCloned = viewModel::launchWorkClone,
+                            onRemoveCloned = viewModel::removeFromWorkProfile,
                         )
 
                         Tab.Shield -> ShieldScreen(

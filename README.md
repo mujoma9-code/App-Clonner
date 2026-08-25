@@ -49,13 +49,44 @@ The word "VPN" here is only the Android API that lets an app see its own device'
 traffic. **There is no Clonner server and no remote endpoint.** Nothing about the apps you
 have installed or the domains you look up is uploaded anywhere.
 
-### A clone is not a sandbox
+## Two kinds of clone
 
-A clone launches the **real installed app**, and shares that app's data and login session.
-Clonner does not give you two independently logged-in copies of one app — that requires a
-full app-virtualisation container or a work profile, neither of which this app implements.
-If you want two separate accounts, use your device's built-in Dual Apps / Work Profile
-feature. Clonner's clones are about *organisation and shielding*, not isolation.
+Clonner has a **Clones** tab and a **Real** tab, and they do genuinely different things.
+
+**Clones tab — shortcut clones.** Your own name, colour and pinned home-screen icon for an
+app you already have. Tapping one opens the *real* installed app and shares its data and
+login. Good for organisation and per-app shielding; it is not a second account.
+
+**Real tab — work-profile clones.** This is the actual thing. Android's managed-profile
+mechanism runs a second copy of an app as a *different Android user*, with its own data
+directory and its own login. Two Instagram accounts, both signed in, side by side. It is
+the same mechanism behind Shelter and Island, and behind the "Work" copies of apps on a
+corporate phone.
+
+Setup runs through Android's own provisioning flow — Clonner cannot create a profile
+silently, and the system asks you to confirm. Nothing is wiped and your personal apps are
+untouched. Once the profile exists, cloning happens from the work-profile copy of Clonner
+(the Real tab links straight to it), which calls
+`DevicePolicyManager.installExistingPackage` to install an app that is already on the
+device. **No APK is ever read, copied or repackaged** — the system installs its own copy.
+
+Caveats worth knowing before you rely on it:
+
+- Android allows **one** work profile per device. If your employer already set one up, or
+  another app owns it, Clonner cannot use it.
+- Requires Android 9 (API 28) and a device with `FEATURE_MANAGED_USERS`. Some Go-edition
+  and budget devices ship without it.
+- Removing the work profile removes every cloned app and its data with it.
+- Cloned apps appear in your launcher with a briefcase badge.
+
+### A note on iOS
+
+The `ios/` directory holds a SwiftUI app, and **it deliberately does not clone anything.**
+On iOS there is no API to enumerate installed apps, launch arbitrary apps, place a home
+screen icon, or read another app's container — and sideloading does not change that, since
+signing installs an app without granting it entitlements. The iOS build is therefore a
+launcher (custom names and colours, opened by URL scheme, home-screen icons via the
+Shortcuts app) plus the DNS profile. See `ios/README.md`.
 
 ---
 
